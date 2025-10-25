@@ -1,43 +1,57 @@
-// Wishlist Application (View-Only) - Firebase Version
-import dbService from './db-service.js';
-
+// Wishlist Application (View-Only)
 class WishlistApp {
     constructor() {
-        this.items = [];
-        this.customCategories = {};
-        this.unsubscribeItems = null;
+        this.items = this.loadItems();
         this.init();
     }
 
-    async init() {
+    init() {
         this.setupEventListeners();
-        await this.loadCustomCategories();
-        await this.loadAndSubscribeToItems();
-        this.updateStats();
-    }
-
-    // Load custom categories once
-    async loadCustomCategories() {
-        this.customCategories = await dbService.getCategories();
-    }
-
-    // Firebase Data Management
-    async loadAndSubscribeToItems() {
-        // Initial load
-        this.items = await dbService.getItems();
         this.renderWishlist();
         this.updateStats();
+    }
 
-        // Subscribe to real-time updates
-        this.unsubscribeItems = dbService.onItemsChange((items) => {
-            this.items = items;
-            this.renderWishlist();
-            this.updateStats();
-        });
+    // Local Storage Management
+    loadItems() {
+        const saved = localStorage.getItem('wishlistItems');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveItems() {
+        localStorage.setItem('wishlistItems', JSON.stringify(this.items));
     }
 
     // Event Listeners
     setupEventListeners() {
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            this.filterItems();
+        });
+
+        // Filter controls
+        document.getElementById('categoryFilter').addEventListener('change', () => {
+            this.filterItems();
+        });
+
+        document.getElementById('priorityFilter').addEventListener('change', () => {
+            this.filterItems();
+        });
+
+        document.getElementById('statusFilter').addEventListener('change', () => {
+            this.filterItems();
+        });
+
+        // Notification forms
+        document.getElementById('purchaseForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitPurchaseNotification();
+        });
+
+        document.getElementById('wishesForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitBirthdayWish();
+        });
+
         // Modal close on outside click
         document.getElementById('itemModal').addEventListener('click', (e) => {
             if (e.target.id === 'itemModal') {
@@ -50,32 +64,32 @@ class WishlistApp {
             if (e.key === 'Escape') {
                 this.closeModal();
             }
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
         });
     }
 
-    async togglePurchaseStatus(id) {
+
+    togglePurchaseStatus(id) {
         const item = this.items.find(item => item.id === id);
         if (item) {
             if (item.status === 'available') {
                 const purchaser = prompt('Who purchased this item? (optional)');
-                const updates = {
-                    status: 'purchased',
-                    purchasedBy: purchaser || 'Someone special',
-                    datePurchased: new Date().toISOString()
-                };
-                
-                await dbService.updateItem(id, updates);
+                item.status = 'purchased';
+                item.purchasedBy = purchaser || 'Someone special';
+                item.datePurchased = new Date().toISOString();
                 this.showNotification(`${item.name} marked as purchased!`, 'success');
             } else {
-                const updates = {
-                    status: 'available',
-                    purchasedBy: null,
-                    datePurchased: null
-                };
-                
-                await dbService.updateItem(id, updates);
+                item.status = 'available';
+                item.purchasedBy = null;
+                item.datePurchased = null;
                 this.showNotification(`${item.name} marked as available again`, 'info');
             }
+            this.saveItems();
+            this.renderWishlist();
+            this.updateStats();
         }
     }
 
@@ -134,6 +148,11 @@ class WishlistApp {
                         </a>
                     ` : ''}
                     
+                    <button onclick="app.togglePurchaseStatus('${item.id}')" class="btn ${item.status === 'purchased' ? 'btn-secondary' : 'btn-success'} btn-small">
+                        <i class="fas fa-${item.status === 'purchased' ? 'undo' : 'check'}"></i>
+                        ${item.status === 'purchased' ? 'Mark Available' : 'Mark Purchased'}
+                    </button>
+                    
                     <button onclick="app.showItemDetails('${item.id}')" class="btn btn-primary btn-small">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
@@ -148,9 +167,29 @@ class WishlistApp {
         `;
     }
 
-    // Get all items (no filtering)
+    // Filtering
     getFilteredItems() {
-        return this.items;
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const priorityFilter = document.getElementById('priorityFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+
+        return this.items.filter(item => {
+            const matchesSearch = !searchTerm || 
+                item.name.toLowerCase().includes(searchTerm) ||
+                item.description.toLowerCase().includes(searchTerm) ||
+                item.category.toLowerCase().includes(searchTerm);
+            
+            const matchesCategory = !categoryFilter || item.category === categoryFilter;
+            const matchesPriority = !priorityFilter || item.priority === priorityFilter;
+            const matchesStatus = !statusFilter || item.status === statusFilter;
+
+            return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
+        });
+    }
+
+    filterItems() {
+        this.renderWishlist();
     }
 
     // Statistics
@@ -208,6 +247,9 @@ class WishlistApp {
                         </a>
                     </div>
                 ` : ''}
+                <div class="detail-row">
+                    <strong>Date Added:</strong> ${new Date(item.dateAdded).toLocaleDateString()}
+                </div>
                 ${item.purchasedBy ? `
                     <div class="detail-row">
                         <strong>Purchased By:</strong> ${this.escapeHtml(item.purchasedBy)}
@@ -218,13 +260,24 @@ class WishlistApp {
                 ` : ''}
             </div>
             
-            ${item.link ? `
-                <div style="margin-top: 30px;">
+            <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap;">
+                ${item.link ? `
                     <a href="${item.link}" target="_blank" class="btn btn-primary">
                         <i class="fas fa-external-link-alt"></i> View Item
                     </a>
-                </div>
-            ` : ''}
+                ` : ''}
+                
+                <button onclick="app.togglePurchaseStatus('${item.id}'); app.closeModal();" class="btn ${item.status === 'purchased' ? 'btn-secondary' : 'btn-success'}">
+                    <i class="fas fa-${item.status === 'purchased' ? 'undo' : 'check'}"></i>
+                    ${item.status === 'purchased' ? 'Mark Available' : 'Mark Purchased'}
+                </button>
+                
+                ${this.isAdminMode ? `
+                    <button onclick="app.removeItem('${item.id}'); app.closeModal();" class="btn btn-secondary">
+                        <i class="fas fa-trash"></i> Remove Item
+                    </button>
+                ` : ''}
+            </div>
         `;
         
         modal.classList.add('show');
@@ -234,10 +287,76 @@ class WishlistApp {
         document.getElementById('itemModal').classList.remove('show');
     }
 
+    // Notification Functions
+    submitPurchaseNotification() {
+        const purchaserName = document.getElementById('purchaserName').value.trim();
+        const purchasedItem = document.getElementById('purchasedItem').value.trim();
+        const purchaseMessage = document.getElementById('purchaseMessage').value.trim();
+
+        if (!purchaserName || !purchasedItem) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+
+        const notification = {
+            id: Date.now().toString(),
+            type: 'purchase',
+            purchaserName: purchaserName,
+            purchasedItem: purchasedItem,
+            message: purchaseMessage,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        this.saveNotification(notification);
+        this.clearPurchaseForm();
+        this.showNotification('Purchase notification sent! JJ will be so happy! 🎉', 'success');
+    }
+
+    submitBirthdayWish() {
+        const wisherName = document.getElementById('wisherName').value.trim();
+        const birthdayMessage = document.getElementById('birthdayMessage').value.trim();
+
+        if (!wisherName || !birthdayMessage) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+
+        const notification = {
+            id: Date.now().toString(),
+            type: 'birthday_wish',
+            wisherName: wisherName,
+            message: birthdayMessage,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        this.saveNotification(notification);
+        this.clearWishesForm();
+        this.showNotification('Birthday wish sent! Thank you for making JJ\'s day special! 💝', 'success');
+    }
+
+    saveNotification(notification) {
+        const notifications = this.loadNotifications();
+        notifications.unshift(notification);
+        localStorage.setItem('wishlistNotifications', JSON.stringify(notifications));
+    }
+
+    loadNotifications() {
+        const saved = localStorage.getItem('wishlistNotifications');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    clearPurchaseForm() {
+        document.getElementById('purchaseForm').reset();
+    }
+
+    clearWishesForm() {
+        document.getElementById('wishesForm').reset();
+    }
 
     // Utility Functions
     escapeHtml(text) {
-        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -252,12 +371,19 @@ class WishlistApp {
             'clothing': 'Clothing'
         };
         
-        // Check for custom categories (cached)
-        if (this.customCategories[category]) {
-            return this.customCategories[category];
+        // Check for custom categories
+        const customCategories = this.loadCustomCategories();
+        if (customCategories[category]) {
+            return customCategories[category];
         }
         
         return categoryNames[category] || category;
+    }
+
+    // Custom Categories Management (for display purposes)
+    loadCustomCategories() {
+        const saved = localStorage.getItem('customCategories');
+        return saved ? JSON.parse(saved) : {};
     }
 
     showNotification(message, type = 'info') {
@@ -300,13 +426,6 @@ class WishlistApp {
         }, 3000);
     }
 
-    // Cleanup on page unload
-    destroy() {
-        if (this.unsubscribeItems) {
-            this.unsubscribeItems();
-        }
-        dbService.cleanup();
-    }
 }
 
 // Global functions for HTML onclick handlers
@@ -314,19 +433,41 @@ function closeModal() {
     app.closeModal();
 }
 
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + '-tab').classList.add('active');
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+
+function toggleNotifications() {
+    const content = document.getElementById('notificationsContent');
+    const icon = document.querySelector('.toggle-icon');
+    
+    if (content.classList.contains('show')) {
+        content.classList.remove('show');
+        icon.classList.remove('rotated');
+    } else {
+        content.classList.add('show');
+        icon.classList.add('rotated');
+    }
+}
+
 // Initialize the application
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new WishlistApp();
-    
-    // IMPORTANT: Make app globally accessible IMMEDIATELY for onclick handlers
-    window.app = app;
-    window.closeModal = closeModal;
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        app.destroy();
-    });
     
     // Add CSS animations
     const style = document.createElement('style');

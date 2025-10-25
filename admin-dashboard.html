@@ -440,6 +440,71 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
+        
+        /* Make add item modal semi-full screen */
+        #addItemModal .modal-content {
+            max-width: 1200px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: 2% auto;
+        }
+        
+        #addItemModal .modal-body {
+            padding: 30px;
+        }
+        
+        /* Better spacing for large modal */
+        #addItemModal h2 {
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        
+        #addItemModal .form-row {
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        #addItemModal .form-group label {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        
+        #addItemModal .form-group input,
+        #addItemModal .form-group textarea,
+        #addItemModal .form-group select {
+            padding: 14px 16px;
+            font-size: 1rem;
+        }
+        
+        /* Larger buttons in modal */
+        #addItemModal button[type="submit"],
+        #addItemModal button[type="button"] {
+            padding: 14px 30px;
+            font-size: 1.05rem;
+            min-width: 150px;
+        }
+        
+        /* Mobile responsive for add item modal */
+        @media (max-width: 768px) {
+            #addItemModal .modal-content {
+                width: 95%;
+                margin: 1% auto;
+            }
+            
+            #addItemModal .modal-body {
+                padding: 20px;
+            }
+            
+            #addItemModal .form-row {
+                grid-template-columns: 1fr !important;
+            }
+            
+            #addItemModal h2 {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -450,6 +515,9 @@
                 <i class="fas fa-cog"></i> Admin Dashboard
             </h1>
             <div class="admin-actions">
+                <button class="btn btn-success" onclick="showAddItemModal()">
+                    <i class="fas fa-plus"></i> Add New Item
+                </button>
                 <a href="index.html" class="btn view-wishlist-btn">
                     <i class="fas fa-eye"></i> View Wishlist
                 </a>
@@ -457,80 +525,6 @@
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
-        </div>
-
-        <!-- Add Item Section -->
-        <div class="add-item-section">
-            <h2><i class="fas fa-plus"></i> Add New Item</h2>
-            <form id="addItemForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="itemName">Item Name *</label>
-                        <input type="text" id="itemName" required placeholder="e.g., Wireless Headphones">
-                    </div>
-                    <div class="form-group">
-                        <label for="itemPrice">Price Range</label>
-                        <input type="text" id="itemPrice" placeholder="e.g., $50-100 or Free">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="itemCategory">Category</label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="itemCategory" style="flex: 1;">
-                                <option value="tea-herbs">Tea & Herbs</option>
-                                <option value="beauty-health">Beauty & Health</option>
-                                <option value="electronics">Electronics</option>
-                                <option value="accessories">Accessories</option>
-                                <option value="clothing">Clothing</option>
-                            </select>
-                            <button type="button" onclick="showAddCategoryModal()" class="btn btn-primary btn-small" style="white-space: nowrap;">
-                                <i class="fas fa-plus"></i> Add Category
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="itemPriority">Priority</label>
-                        <select id="itemPriority">
-                            <option value="high">High (Really want this!)</option>
-                            <option value="medium">Medium (Would be nice)</option>
-                            <option value="low">Low (Just an idea)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label for="itemDescription">Description</label>
-                        <textarea id="itemDescription" placeholder="Brief description of the item..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label for="itemLink">Purchase Link (optional)</label>
-                        <input type="url" id="itemLink" placeholder="https://...">
-                    </div>
-                </div>
-                
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label for="itemImage">Item Photo (optional)</label>
-                        <input type="file" id="itemImage" accept="image/*" onchange="previewImage(event)">
-                        <div id="imagePreview" class="image-preview" style="display: none;">
-                            <img id="previewImg" src="" alt="Preview">
-                            <button type="button" onclick="removeImage()" class="remove-image-btn">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-plus"></i> Add to Wishlist
-                </button>
-            </form>
         </div>
 
         <!-- Filter and Search -->
@@ -562,23 +556,6 @@
                     <option value="available">Available</option>
                     <option value="purchased">Purchased</option>
                 </select>
-            </div>
-        </div>
-
-        <!-- Notifications Section -->
-        <div class="notifications-section">
-            <h2><i class="fas fa-bell"></i> Notifications & Birthday Wishes</h2>
-            <div class="notifications-header">
-                <div class="notification-stats">
-                    <span class="stat-badge" id="unreadCount">0</span>
-                    <span>Unread Notifications</span>
-                </div>
-                <button class="btn btn-secondary btn-small" onclick="markAllAsRead()">
-                    <i class="fas fa-check-double"></i> Mark All as Read
-                </button>
-            </div>
-            <div class="notifications-list" id="notificationsList">
-                <!-- Notifications will be displayed here -->
             </div>
         </div>
 
@@ -632,6 +609,90 @@
         </div>
     </div>
 
+    <!-- Add Item Modal -->
+    <div class="modal" id="addItemModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddItemModal()">&times;</span>
+            <div class="modal-body">
+                <h2><i class="fas fa-plus"></i> Add New Item</h2>
+                <form id="addItemForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemName">Item Name *</label>
+                            <input type="text" id="itemName" required placeholder="e.g., Wireless Headphones">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemPrice">Price Range</label>
+                            <input type="text" id="itemPrice" placeholder="e.g., $50-100 or Free">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemCategory">Category</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="itemCategory" style="flex: 1;">
+                                    <option value="tea-herbs">Tea & Herbs</option>
+                                    <option value="beauty-health">Beauty & Health</option>
+                                    <option value="electronics">Electronics</option>
+                                    <option value="accessories">Accessories</option>
+                                    <option value="clothing">Clothing</option>
+                                </select>
+                                <button type="button" onclick="showAddCategoryModal()" class="btn btn-primary btn-small" style="white-space: nowrap;">
+                                    <i class="fas fa-plus"></i> Add Category
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemPriority">Priority</label>
+                            <select id="itemPriority">
+                                <option value="high">High (Really want this!)</option>
+                                <option value="medium">Medium (Would be nice)</option>
+                                <option value="low">Low (Just an idea)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="itemDescription">Description</label>
+                            <textarea id="itemDescription" placeholder="Brief description of the item..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="itemLink">Purchase Link (optional)</label>
+                            <input type="url" id="itemLink" placeholder="https://...">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="itemImage">Item Photo (optional)</label>
+                            <input type="file" id="itemImage" accept="image/*" onchange="previewImage(event)">
+                            <div id="imagePreview" class="image-preview" style="display: none;">
+                                <img id="previewImg" src="" alt="Preview">
+                                <button type="button" onclick="removeImage()" class="remove-image-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add to Wishlist
+                        </button>
+                        <button type="button" onclick="closeAddItemModal()" class="btn btn-secondary">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Category Modal -->
     <div class="modal" id="addCategoryModal">
         <div class="modal-content">
@@ -661,7 +722,9 @@
         </div>
     </div>
 
-    <script src="admin-script.js"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="db-service.js"></script>
+    <script type="module" src="admin-script.js"></script>
     <script>
         // Image preview functionality
         function previewImage(event) {

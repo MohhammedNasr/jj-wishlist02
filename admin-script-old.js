@@ -1,15 +1,11 @@
-// Admin Dashboard Application - Firebase Version
-import dbService from './db-service.js';
-
+// Admin Dashboard Application
 class AdminDashboard {
     constructor() {
-        this.items = [];
-        this.customCategories = {};
-        this.unsubscribeItems = null;
+        this.items = this.loadItems();
         this.init();
     }
 
-    async init() {
+    init() {
         // Check if user is logged in
         if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
             window.location.href = 'admin-login.html';
@@ -17,25 +13,20 @@ class AdminDashboard {
         }
 
         this.setupEventListeners();
-        await this.loadData();
-        await this.updateCategorySelects();
-    }
-
-    // Firebase Data Management
-    async loadData() {
-        // Load initial data
-        this.items = await dbService.getItems();
-        this.customCategories = await dbService.getCategories();
-        
+        this.updateCategorySelects();
         this.renderItems();
         this.updateStats();
+        this.renderNotifications();
+    }
 
-        // Subscribe to real-time updates
-        this.unsubscribeItems = dbService.onItemsChange((items) => {
-            this.items = items;
-            this.renderItems();
-            this.updateStats();
-        });
+    // Local Storage Management
+    loadItems() {
+        const saved = localStorage.getItem('wishlistItems');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveItems() {
+        localStorage.setItem('wishlistItems', JSON.stringify(this.items));
     }
 
     // Event Listeners
@@ -77,25 +68,10 @@ class AdminDashboard {
             }
         });
 
-        document.getElementById('addItemModal').addEventListener('click', (e) => {
-            if (e.target.id === 'addItemModal') {
-                closeAddItemModal();
-            }
-        });
-
-        document.getElementById('addCategoryModal').addEventListener('click', (e) => {
-            if (e.target.id === 'addCategoryModal') {
-                closeAddCategoryModal();
-            }
-        });
-
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                // Close any open modals
                 this.closeModal();
-                closeAddItemModal();
-                closeAddCategoryModal();
             }
             if (e.ctrlKey && e.key === 'k') {
                 e.preventDefault();
@@ -119,8 +95,9 @@ class AdminDashboard {
         }
     }
     
-    async addItemWithImage(imageData) {
+    addItemWithImage(imageData) {
         const item = {
+            id: Date.now().toString(),
             name: document.getElementById('itemName').value.trim(),
             description: document.getElementById('itemDescription').value.trim(),
             price: document.getElementById('itemPrice').value.trim(),
@@ -138,15 +115,16 @@ class AdminDashboard {
             return;
         }
 
-        try {
-            await dbService.addItem(item);
-            this.clearForm();
-            this.showNotification('Item added to wishlist!', 'success');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-            console.error('Error adding item:', error);
-            this.showNotification('Error adding item. Please try again.', 'error');
-        }
+        this.items.unshift(item);
+        this.saveItems();
+        this.renderItems();
+        this.updateStats();
+        this.clearForm();
+        
+        this.showNotification('Item added to wishlist!', 'success');
+        
+        // Scroll to top to see the new item
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     processImage(file, callback) {
@@ -189,47 +167,36 @@ class AdminDashboard {
         document.getElementById('addItemForm').reset();
         document.getElementById('imagePreview').style.display = 'none';
         document.getElementById('previewImg').src = '';
-        closeAddItemModal();
     }
 
-    async removeItem(id) {
+    removeItem(id) {
         if (confirm('Are you sure you want to remove this item?')) {
-            try {
-                await dbService.deleteItem(id);
-                this.showNotification('Item removed from wishlist', 'info');
-            } catch (error) {
-                console.error('Error removing item:', error);
-                this.showNotification('Error removing item. Please try again.', 'error');
-            }
+            this.items = this.items.filter(item => item.id !== id);
+            this.saveItems();
+            this.renderItems();
+            this.updateStats();
+            this.showNotification('Item removed from wishlist', 'info');
         }
     }
 
-    async togglePurchaseStatus(id) {
+    togglePurchaseStatus(id) {
         const item = this.items.find(item => item.id === id);
         if (item) {
-            try {
-                if (item.status === 'available') {
-                    const purchaser = prompt('Who purchased this item? (optional)');
-                    const updates = {
-                        status: 'purchased',
-                        purchasedBy: purchaser || 'Someone special',
-                        datePurchased: new Date().toISOString()
-                    };
-                    await dbService.updateItem(id, updates);
-                    this.showNotification(`${item.name} marked as purchased!`, 'success');
-                } else {
-                    const updates = {
-                        status: 'available',
-                        purchasedBy: null,
-                        datePurchased: null
-                    };
-                    await dbService.updateItem(id, updates);
-                    this.showNotification(`${item.name} marked as available again`, 'info');
-                }
-            } catch (error) {
-                console.error('Error updating item:', error);
-                this.showNotification('Error updating item. Please try again.', 'error');
+            if (item.status === 'available') {
+                const purchaser = prompt('Who purchased this item? (optional)');
+                item.status = 'purchased';
+                item.purchasedBy = purchaser || 'Someone special';
+                item.datePurchased = new Date().toISOString();
+                this.showNotification(`${item.name} marked as purchased!`, 'success');
+            } else {
+                item.status = 'available';
+                item.purchasedBy = null;
+                item.datePurchased = null;
+                this.showNotification(`${item.name} marked as available again`, 'info');
             }
+            this.saveItems();
+            this.renderItems();
+            this.updateStats();
         }
     }
 
@@ -445,29 +412,34 @@ class AdminDashboard {
             'clothing': 'Clothing'
         };
         
-        // For synchronous rendering, we'll use default categories
-        // Custom categories are loaded async during init
+        // Check for custom categories
+        const customCategories = this.loadCustomCategories();
+        if (customCategories[category]) {
+            return customCategories[category];
+        }
+        
         return categoryNames[category] || category;
     }
 
     // Custom Categories Management
-    async loadCustomCategories() {
-        return await dbService.getCategories();
+    loadCustomCategories() {
+        const saved = localStorage.getItem('customCategories');
+        return saved ? JSON.parse(saved) : {};
     }
 
-    async saveCustomCategories(categories) {
-        await dbService.saveCategories(categories);
+    saveCustomCategories(categories) {
+        localStorage.setItem('customCategories', JSON.stringify(categories));
     }
 
-    async addCustomCategory(name, value) {
-        const customCategories = await this.loadCustomCategories();
+    addCustomCategory(name, value) {
+        const customCategories = this.loadCustomCategories();
         customCategories[value] = name;
-        await this.saveCustomCategories(customCategories);
-        await this.updateCategorySelects();
+        this.saveCustomCategories(customCategories);
+        this.updateCategorySelects();
     }
 
-    async updateCategorySelects() {
-        const customCategories = await this.loadCustomCategories();
+    updateCategorySelects() {
+        const customCategories = this.loadCustomCategories();
         
         // Update main category select
         const mainSelect = document.getElementById('itemCategory');
@@ -567,16 +539,138 @@ class AdminDashboard {
         }, 3000);
     }
 
+    // Notification Management
+    loadNotifications() {
+        const saved = localStorage.getItem('wishlistNotifications');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveNotifications(notifications) {
+        localStorage.setItem('wishlistNotifications', JSON.stringify(notifications));
+    }
+
+    renderNotifications() {
+        const notifications = this.loadNotifications();
+        const notificationsList = document.getElementById('notificationsList');
+        const unreadCount = document.getElementById('unreadCount');
+        
+        const unreadNotifications = notifications.filter(n => !n.read);
+        unreadCount.textContent = unreadNotifications.length;
+        
+        if (notifications.length === 0) {
+            notificationsList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #a0aec0;">
+                    <i class="fas fa-bell-slash" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                    <h3>No notifications yet</h3>
+                    <p>When someone buys something or sends birthday wishes, they'll appear here!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        notificationsList.innerHTML = notifications.map(notification => this.createNotificationHTML(notification)).join('');
+    }
+
+    createNotificationHTML(notification) {
+        const isUnread = !notification.read;
+        const timeAgo = this.getTimeAgo(notification.timestamp);
+        
+        if (notification.type === 'purchase') {
+            return `
+                <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
+                    <div class="notification-header">
+                        <span class="notification-type purchase">
+                            <i class="fas fa-gift"></i> Purchase
+                        </span>
+                        <span class="notification-time">${timeAgo}</span>
+                    </div>
+                    <div class="notification-content">
+                        <strong>${this.escapeHtml(notification.purchaserName)}</strong> bought 
+                        <strong>"${this.escapeHtml(notification.purchasedItem)}"</strong>
+                        ${notification.message ? `<br><em>"${this.escapeHtml(notification.message)}"</em>` : ''}
+                    </div>
+                    <div class="notification-actions">
+                        ${isUnread ? `
+                            <button onclick="adminApp.markAsRead('${notification.id}')" class="btn btn-primary btn-small">
+                                <i class="fas fa-check"></i> Mark as Read
+                            </button>
+                        ` : ''}
+                        <button onclick="adminApp.deleteNotification('${notification.id}')" class="btn btn-secondary btn-small">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if (notification.type === 'birthday_wish') {
+            return `
+                <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
+                    <div class="notification-header">
+                        <span class="notification-type birthday_wish">
+                            <i class="fas fa-heart"></i> Birthday Wish
+                        </span>
+                        <span class="notification-time">${timeAgo}</span>
+                    </div>
+                    <div class="notification-content">
+                        <strong>${this.escapeHtml(notification.wisherName)}</strong> sent you a birthday wish:<br>
+                        <em>"${this.escapeHtml(notification.message)}"</em>
+                    </div>
+                    <div class="notification-actions">
+                        ${isUnread ? `
+                            <button onclick="adminApp.markAsRead('${notification.id}')" class="btn btn-primary btn-small">
+                                <i class="fas fa-check"></i> Mark as Read
+                            </button>
+                        ` : ''}
+                        <button onclick="adminApp.deleteNotification('${notification.id}')" class="btn btn-secondary btn-small">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    markAsRead(notificationId) {
+        const notifications = this.loadNotifications();
+        const notification = notifications.find(n => n.id === notificationId);
+        if (notification) {
+            notification.read = true;
+            this.saveNotifications(notifications);
+            this.renderNotifications();
+            this.showNotification('Notification marked as read', 'success');
+        }
+    }
+
+    deleteNotification(notificationId) {
+        if (confirm('Are you sure you want to delete this notification?')) {
+            const notifications = this.loadNotifications();
+            const filteredNotifications = notifications.filter(n => n.id !== notificationId);
+            this.saveNotifications(filteredNotifications);
+            this.renderNotifications();
+            this.showNotification('Notification deleted', 'info');
+        }
+    }
+
+    getTimeAgo(timestamp) {
+        const now = new Date();
+        const notificationTime = new Date(timestamp);
+        const diffInSeconds = Math.floor((now - notificationTime) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        
+        return notificationTime.toLocaleDateString();
+    }
+
     // Data Management
-    async clearAllItems() {
+    clearAllItems() {
         if (confirm('Are you sure you want to clear all items? This action cannot be undone.')) {
-            try {
-                await dbService.clearAllItems();
-                this.showNotification('All items cleared', 'info');
-            } catch (error) {
-                console.error('Error clearing items:', error);
-                this.showNotification('Error clearing items', 'error');
-            }
+            this.items = [];
+            this.saveItems();
+            this.renderItems();
+            this.updateStats();
+            this.showNotification('All items cleared', 'info');
         }
     }
 
@@ -593,38 +687,32 @@ class AdminDashboard {
         this.showNotification('Wishlist exported successfully', 'success');
     }
 
-    async importWishlist(event) {
+    importWishlist(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             try {
                 const importedItems = JSON.parse(e.target.result);
                 if (Array.isArray(importedItems)) {
-                    await dbService.importItems(importedItems);
+                    this.items = importedItems;
+                    this.saveItems();
+                    this.renderItems();
+                    this.updateStats();
                     this.showNotification('Wishlist imported successfully', 'success');
                 } else {
                     throw new Error('Invalid file format');
                 }
             } catch (error) {
-                console.error('Import error:', error);
                 this.showNotification('Error importing wishlist. Please check the file format.', 'error');
             }
         };
         reader.readAsText(file);
     }
 
-    // Cleanup
-    cleanup() {
-        if (this.unsubscribeItems) {
-            this.unsubscribeItems();
-        }
-        dbService.cleanup();
-    }
-
     // Category Management
-    async addCategory() {
+    addCategory() {
         const name = document.getElementById('newCategoryName').value.trim();
         const value = document.getElementById('newCategoryValue').value.trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -640,7 +728,7 @@ class AdminDashboard {
             return;
         }
 
-        await this.addCustomCategory(name, value);
+        this.addCustomCategory(name, value);
         this.closeAddCategoryModal();
         this.showNotification(`Category "${name}" added successfully!`, 'success');
     }
@@ -659,14 +747,16 @@ function logout() {
     }
 }
 
-function showAddItemModal() {
-    document.getElementById('addItemModal').classList.add('show');
-    document.getElementById('itemName').focus();
-}
-
-function closeAddItemModal() {
-    document.getElementById('addItemModal').classList.remove('show');
-    // Note: Don't reset form here as it's handled in clearForm() after successful add
+function markAllAsRead() {
+    if (confirm('Mark all notifications as read?')) {
+        const notifications = adminApp.loadNotifications();
+        notifications.forEach(notification => {
+            notification.read = true;
+        });
+        adminApp.saveNotifications(notifications);
+        adminApp.renderNotifications();
+        adminApp.showNotification('All notifications marked as read', 'success');
+    }
 }
 
 function showAddCategoryModal() {
@@ -683,20 +773,6 @@ function closeAddCategoryModal() {
 let adminApp;
 document.addEventListener('DOMContentLoaded', () => {
     adminApp = new AdminDashboard();
-    
-    // IMPORTANT: Make adminApp and functions globally accessible IMMEDIATELY for onclick handlers
-    window.adminApp = adminApp;
-    window.showAddItemModal = showAddItemModal;
-    window.closeAddItemModal = closeAddItemModal;
-    window.showAddCategoryModal = showAddCategoryModal;
-    window.closeAddCategoryModal = closeAddCategoryModal;
-    window.closeModal = closeModal;
-    window.logout = logout;
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        adminApp.cleanup();
-    });
     
     // Add CSS animations
     const style = document.createElement('style');

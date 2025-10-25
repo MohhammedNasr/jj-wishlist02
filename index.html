@@ -15,7 +15,7 @@
             <div class="header-content">
                 <div class="header-text">
                     <h1><i class="fas fa-gift"></i> JJ's Birthday Wishlist</h1>
-                    <p class="subtitle">Help make my birthday special! 🎉</p>
+                    <p class="subtitle">Make my birthday special! 🎉</p>
                 </div>
                 <div class="header-image">
                     <img src="image/Untitled design.jpg" alt="Happy child with balloons celebrating" class="hero-image">
@@ -24,37 +24,6 @@
         </header>
 
 
-        <!-- Filter and Search -->
-        <div class="filter-section">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search items...">
-            </div>
-            
-            <div class="filter-controls">
-                <select id="categoryFilter">
-                    <option value="">All Categories</option>
-                    <option value="tea-herbs">Tea & Herbs</option>
-                    <option value="beauty-health">Beauty & Health</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="clothing">Clothing</option>
-                </select>
-                
-                <select id="priorityFilter">
-                    <option value="">All Priorities</option>
-                    <option value="high">High Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="low">Low Priority</option>
-                </select>
-                
-                <select id="statusFilter">
-                    <option value="">All Items</option>
-                    <option value="available">Available</option>
-                    <option value="purchased">Purchased</option>
-                </select>
-            </div>
-        </div>
 
         <!-- Wishlist Stats -->
         <div class="stats-section">
@@ -95,56 +64,10 @@
             <p>The birthday wishlist is empty. Check back later!</p>
         </div>
 
-        <!-- Compact Notifications Section -->
-        <div class="compact-notifications">
-            <div class="notifications-toggle">
-                <button class="toggle-btn" onclick="toggleNotifications()">
-                    <i class="fas fa-bell"></i> Let JJ Know
-                    <i class="fas fa-chevron-down toggle-icon"></i>
-                </button>
-            </div>
-            
-            <div class="notifications-content" id="notificationsContent">
-                <div class="notification-tabs">
-                    <button class="tab-btn active" onclick="showTab('purchase')">
-                        <i class="fas fa-gift"></i> I Bought Something
-                    </button>
-                    <button class="tab-btn" onclick="showTab('wishes')">
-                        <i class="fas fa-heart"></i> Birthday Wishes
-                    </button>
-                </div>
-                
-                <!-- Purchase Notification Tab -->
-                <div class="tab-content active" id="purchase-tab">
-                    <form id="purchaseForm" class="compact-form">
-                        <div class="form-row">
-                            <input type="text" id="purchaserName" required placeholder="Your name">
-                            <input type="text" id="purchasedItem" required placeholder="What did you buy?">
-                        </div>
-                        <textarea id="purchaseMessage" placeholder="Optional message for JJ..."></textarea>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </form>
-                </div>
-                
-                <!-- Birthday Wishes Tab -->
-                <div class="tab-content" id="wishes-tab">
-                    <form id="wishesForm" class="compact-form">
-                        <input type="text" id="wisherName" required placeholder="Your name">
-                        <textarea id="birthdayMessage" required placeholder="Your birthday message for JJ..."></textarea>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-heart"></i> Send Wish
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
         <!-- Footer with subtle admin access -->
         <footer class="site-footer">
             <div class="footer-content">
-                <p>&copy; 2024 JJ's Birthday Wishlist. Made with ❤️</p>
+                <p>&copy; 2025 JJ's Birthday Wishlist. Made with ❤️</p>
                 <a href="admin-login.html" class="admin-link" title="Admin Access">JJ</a>
             </div>
         </footer>
@@ -160,6 +83,8 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="db-service.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
