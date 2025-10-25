@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - JJ's Birthday Wishlist</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .admin-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .admin-title {
+            color: #4a5568;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .admin-title i {
+            color: #667eea;
+            margin-right: 10px;
+        }
+        
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .add-item-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .add-item-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+        }
+        
+        .add-item-section h2 i {
+            color: #667eea;
+            margin-right: 10px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .admin-item {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .admin-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .admin-item.purchased {
+            opacity: 0.7;
+            border-color: #38a169;
+        }
+        
+        .admin-item.purchased::before {
+            content: 'PURCHASED';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #38a169;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .admin-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .admin-item-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin: 0;
+            flex: 1;
+        }
+        
+        .admin-item-priority {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .priority-high {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .priority-medium {
+            background: #fef5e7;
+            color: #d69e2e;
+        }
+        
+        .priority-low {
+            background: #e6fffa;
+            color: #38a169;
+        }
+        
+        .admin-item-category {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .admin-item-description {
+            color: #718096;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .admin-item-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        
+        .admin-item-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-item-actions .btn {
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+        }
+        
+        .admin-item-image {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .admin-item-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .image-preview {
+            position: relative;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        
+        .image-preview img {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .remove-image-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-image-btn:hover {
+            background: #c53030;
+            transform: scale(1.1);
+        }
+        
+        .notifications-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notifications-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .notifications-section h2 i {
+            color: #A55166;
+            margin-right: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .notification-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .stat-badge {
+            background: #e53e3e;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .notifications-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-item.unread {
+            border-left-color: #e53e3e;
+            background: #fef7f7;
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .notification-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .notification-type.purchase {
+            background: #e6fffa;
+            color: #38a169;
+        }
+        
+        .notification-type.birthday_wish {
+            background: #fef5e7;
+            color: #d69e2e;
+        }
+        
+        .notification-time {
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+        
+        .notification-content {
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        .notification-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .notification-actions .btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .logout-btn:hover {
+            background: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3);
+        }
+        
+        .view-wishlist-btn {
+            background: #38a169;
+            color: white;
+        }
+        
+        .view-wishlist-btn:hover {
+            background: #2f855a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(56, 161, 105, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .admin-actions {
+                justify-content: center;
+            }
+            
+            .admin-item-actions {
+                flex-direction: column;
+            }
+            
+            .admin-item-actions .btn {
+                min-width: auto;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <h1 class="admin-title">
+                <i class="fas fa-cog"></i> Admin Dashboard
+            </h1>
+            <div class="admin-actions">
+                <a href="index.html" class="btn view-wishlist-btn">
+                    <i class="fas fa-eye"></i> View Wishlist
+                </a>
+                <button class="btn logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Item Section -->
+        <div class="add-item-section">
+            <h2><i class="fas fa-plus"></i> Add New Item</h2>
+            <form id="addItemForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="itemName">Item Name *</label>
+                        <input type="text" id="itemName" required placeholder="e.g., Wireless Headphones">
+                    </div>
+                    <div class="form-group">
+                        <label for="itemPrice">Price Range</label>
+                        <input type="text" id="itemPrice" placeholder="e.g., $50-100 or Free">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="itemCategory">Category</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="itemCategory" style="flex: 1;">
+                                <option value="tea-herbs">Tea & Herbs</option>
+                                <option value="beauty-health">Beauty & Health</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="accessories">Accessories</option>
+                                <option value="clothing">Clothing</option>
+                            </select>
+                            <button type="button" onclick="showAddCategoryModal()" class="btn btn-primary btn-small" style="white-space: nowrap;">
+                                <i class="fas fa-plus"></i> Add Category
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemPriority">Priority</label>
+                        <select id="itemPriority">
+                            <option value="high">High (Really want this!)</option>
+                            <option value="medium">Medium (Would be nice)</option>
+                            <option value="low">Low (Just an idea)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea id="itemDescription" placeholder="Brief description of the item..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label for="itemLink">Purchase Link (optional)</label>
+                        <input type="url" id="itemLink" placeholder="https://...">
+                    </div>
+                </div>
+                
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label for="itemImage">Item Photo (optional)</label>
+                        <input type="file" id="itemImage" accept="image/*" onchange="previewImage(event)">
+                        <div id="imagePreview" class="image-preview" style="display: none;">
+                            <img id="previewImg" src="" alt="Preview">
+                            <button type="button" onclick="removeImage()" class="remove-image-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add to Wishlist
+                </button>
+            </form>
+        </div>
+
+        <!-- Filter and Search -->
+        <div class="filter-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search items...">
+            </div>
+            
+            <div class="filter-controls">
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                    <option value="tea-herbs">Tea & Herbs</option>
+                    <option value="beauty-health">Beauty & Health</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="accessories">Accessories</option>
+                    <option value="clothing">Clothing</option>
+                </select>
+                
+                <select id="priorityFilter">
+                    <option value="">All Priorities</option>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+                
+                <select id="statusFilter">
+                    <option value="">All Items</option>
+                    <option value="available">Available</option>
+                    <option value="purchased">Purchased</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="notifications-section">
+            <h2><i class="fas fa-bell"></i> Notifications & Birthday Wishes</h2>
+            <div class="notifications-header">
+                <div class="notification-stats">
+                    <span class="stat-badge" id="unreadCount">0</span>
+                    <span>Unread Notifications</span>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double"></i> Mark All as Read
+                </button>
+            </div>
+            <div class="notifications-list" id="notificationsList">
+                <!-- Notifications will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <i class="fas fa-gift"></i>
+                <div class="stat-info">
+                    <span class="stat-number" id="totalItems">0</span>
+                    <span class="stat-label">Total Items</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle"></i>
+                <div class="stat-info">
+                    <span class="stat-number" id="purchasedItems">0</span>
+                    <span class="stat-label">Purchased</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-heart"></i>
+                <div class="stat-info">
+                    <span class="stat-number" id="highPriorityItems">0</span>
+                    <span class="stat-label">High Priority</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Items List -->
+        <div class="wishlist-container">
+            <div class="wishlist-grid" id="adminItemsGrid">
+                <!-- Items will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-gift"></i>
+            <h3>No items in your wishlist yet</h3>
+            <p>Start adding items to your birthday wishlist!</p>
+        </div>
+    </div>
+
+    <!-- Item Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal" id="addCategoryModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddCategoryModal()">&times;</span>
+            <div class="modal-body">
+                <h2><i class="fas fa-plus"></i> Add New Category</h2>
+                <form id="addCategoryForm">
+                    <div class="form-group">
+                        <label for="newCategoryName">Category Name *</label>
+                        <input type="text" id="newCategoryName" required placeholder="e.g., Books, Home Decor, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="newCategoryValue">Category Value (for system use) *</label>
+                        <input type="text" id="newCategoryValue" required placeholder="e.g., books, home-decor (lowercase, no spaces)">
+                        <small style="color: #718096; font-size: 0.9rem;">This will be used internally. Use lowercase letters and hyphens instead of spaces.</small>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add Category
+                        </button>
+                        <button type="button" onclick="closeAddCategoryModal()" class="btn btn-secondary">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-script.js"></script>
+    <script>
+        // Image preview functionality
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    const previewImg = document.getElementById('previewImg');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function removeImage() {
+            document.getElementById('itemImage').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('previewImg').src = '';
+        }
+    </script>
+</body>
+</html>
